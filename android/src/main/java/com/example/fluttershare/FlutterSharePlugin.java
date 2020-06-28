@@ -1,6 +1,8 @@
 package com.example.fluttershare;
 
 import android.content.Intent;
+import android.content.pm.ResolveInfo;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
@@ -9,6 +11,7 @@ import androidx.core.content.FileProvider;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -126,10 +129,15 @@ public class FlutterSharePlugin implements MethodCallHandler {
             intent.putExtra(Intent.EXTRA_STREAM, fileUri);
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-            Intent chooserIntent = Intent.createChooser(intent, chooserTitle);
-            chooserIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            chooserIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            mRegistrar.context().startActivity(chooserIntent);
+            Intent chooser = Intent.createChooser(intent, chooserTitle);
+            chooser.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            chooser.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            List<ResolveInfo> resInfoList = mRegistrar.context().getPackageManager().queryIntentActivities(chooser, PackageManager.MATCH_DEFAULT_ONLY);
+            for (ResolveInfo resolveInfo : resInfoList) {
+                String packageName = resolveInfo.activityInfo.packageName;
+                mRegistrar.context().grantUriPermission(packageName, fileUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            }
+            mRegistrar.context().startActivity(chooser);
 
             result.success(true);
         }
